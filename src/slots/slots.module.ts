@@ -10,5 +10,6 @@ import { TypeOrmModule } from '@nestjs/typeorm';
   ], 
   controllers: [SlotsController],
   providers: [SlotsService],
+  exports: [SlotsService] 
 })
 export class SlotsModule { }

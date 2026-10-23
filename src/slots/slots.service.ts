@@ -1,26 +1,47 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateSlotDto } from './dto/create-slot.dto';
 import { UpdateSlotDto } from './dto/update-slot.dto';
+import { Slot } from './entities/slot.entity';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class SlotsService {
-  create(createSlotDto: CreateSlotDto) {
-    return 'This action adds a new slot';
+  constructor(
+    @InjectRepository(Slot) private readonly SlotRepository: Repository<Slot>,
+  ) { }
+  async create(dto: CreateSlotDto) {
+    if (new Date(dto.startTime) >= new Date(dto.endTime)) {
+      throw new BadRequestException('Start time must be before end time');
+    }
+    const slot = this.SlotRepository.create(dto);
+    return await this.SlotRepository.save(slot);
   }
 
-  findAll() {
-    return `This action returns all slots`;
+  async findAll() {
+    const slots = await this.SlotRepository.find();
+    if (!slots || slots.length === 0) {
+      throw new NotFoundException('No slots found');
+    }
+    return slots;
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} slot`;
+  async findOne(id: string) {
+    const slot = await this.SlotRepository.findOne({ where: { id } });
+    if (!slot) {
+      throw new NotFoundException('Slot not found');
+    }
+    return slot;
   }
 
-  update(id: number, updateSlotDto: UpdateSlotDto) {
-    return `This action updates a #${id} slot`;
+  async update(id: string, updateSlotDto: UpdateSlotDto) {
+    const slot = await this.findOne(id);
+    Object.assign(slot, updateSlotDto);
+    return await this.SlotRepository.save(slot);
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} slot`;
+  async remove(id: string) {
+    const slot = await this.findOne(id);
+    return await this.SlotRepository.remove(slot);
   }
 }
